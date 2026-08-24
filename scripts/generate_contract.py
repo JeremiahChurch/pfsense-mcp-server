@@ -7,7 +7,7 @@ writable endpoint, the set of valid field names, their JSON types, any enum
 choices, and which fields are required on create (POST) vs update (PATCH).
 
 Usage:
-    python generate_contract.py openapi.json contract-v2.10.0.json --version v2.10.0
+    python generate_contract.py openapi.json contract-v2.10.2.json --version v2.10.2
 """
 import argparse
 import json

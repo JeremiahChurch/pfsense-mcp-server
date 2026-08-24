@@ -87,7 +87,7 @@ async def update_dns_resolver_settings(
             # Upstream DNSResolverSettings fields are regdhcp / regdhcpstatic;
             # the pre-fix names were silently ignored (PATCH drops unknown keys),
             # so DHCP registration could never be toggled. Verified against
-            # pkg-RESTAPI v2.10.0 (see tests/contract).
+            # pkg-RESTAPI v2.10.2 (see tests/contract).
             "register_dhcp": "regdhcp",
             "register_dhcp_static": "regdhcpstatic",
             "custom_options": "custom_options",
@@ -633,7 +633,7 @@ async def delete_dns_domain_override(
 # space-separated action choices (aclname/aclaction/descr are internal-only names
 # that PATCH silently drops and POST rejects). The tool keeps the ergonomic
 # underscore action spellings and maps them to the wire values. Verified against
-# pkg-RESTAPI v2.10.0 (see tests/contract).
+# pkg-RESTAPI v2.10.2 (see tests/contract).
 _ACL_ACTION_WIRE = {
     "allow": "allow",
     "deny": "deny",

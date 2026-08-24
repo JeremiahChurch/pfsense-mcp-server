@@ -1,7 +1,7 @@
 {
  "_meta": {
   "endpoint_count": 233,
-  "pkg_restapi_version": "v2.10.0",
+  "pkg_restapi_version": "v2.10.2",
   "source": "pfrest/pfSense-pkg-RESTAPI openapi.json"
  },
  "endpoints": {
@@ -3105,6 +3105,21 @@
     "failover_peerip": {
      "type": "string"
     },
+    "filename": {
+     "type": "string"
+    },
+    "filename32": {
+     "type": "string"
+    },
+    "filename32arm": {
+     "type": "string"
+    },
+    "filename64": {
+     "type": "string"
+    },
+    "filename64arm": {
+     "type": "string"
+    },
     "gateway": {
      "type": "string"
     },
@@ -3131,6 +3146,12 @@
     "maxleasetime": {
      "type": "integer"
     },
+    "netboot": {
+     "type": "boolean"
+    },
+    "nextserver": {
+     "type": "string"
+    },
     "nonak": {
      "type": "boolean"
     },
@@ -3152,6 +3173,9 @@
     "range_to": {
      "type": "string"
     },
+    "rootpath": {
+     "type": "string"
+    },
     "staticarp": {
      "type": "boolean"
     },
@@ -3161,6 +3185,9 @@
     },
     "statsgraph": {
      "type": "boolean"
+    },
+    "uefihttpboot": {
+     "type": "string"
     },
     "winsserver": {
      "items": "string",
@@ -10756,6 +10783,21 @@
     "failover_peerip": {
      "type": "string"
     },
+    "filename": {
+     "type": "string"
+    },
+    "filename32": {
+     "type": "string"
+    },
+    "filename32arm": {
+     "type": "string"
+    },
+    "filename64": {
+     "type": "string"
+    },
+    "filename64arm": {
+     "type": "string"
+    },
     "gateway": {
      "type": "string"
     },
@@ -10779,6 +10821,12 @@
     "maxleasetime": {
      "type": "integer"
     },
+    "netboot": {
+     "type": "boolean"
+    },
+    "nextserver": {
+     "type": "string"
+    },
     "nonak": {
      "type": "boolean"
     },
@@ -10800,6 +10848,9 @@
     "range_to": {
      "type": "string"
     },
+    "rootpath": {
+     "type": "string"
+    },
     "staticarp": {
      "type": "boolean"
     },
@@ -10809,6 +10860,9 @@
     },
     "statsgraph": {
      "type": "boolean"
+    },
+    "uefihttpboot": {
+     "type": "string"
     },
     "winsserver": {
      "items": "string",
