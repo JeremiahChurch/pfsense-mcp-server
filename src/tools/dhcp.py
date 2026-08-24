@@ -277,7 +277,7 @@ async def create_dhcp_static_mapping(
             mapping_data["gateway"] = gateway
         if dns_server:
             # Upstream dnsserver is an array of strings; a bare string was
-            # rejected. Verified against pkg-RESTAPI v2.10.0 (see tests/contract).
+            # rejected. Verified against pkg-RESTAPI v2.10.2 (see tests/contract).
             try:
                 mapping_data["dnsserver"] = _dns_servers_to_list(dns_server)
             except ValueError as e:
@@ -502,7 +502,7 @@ async def update_dhcp_server_config(
                 return {"success": False, "error": f"Invalid {field_label}: {e}"}
 
     # Upstream dnsserver is an array of strings; a bare string was rejected.
-    # Verified against pkg-RESTAPI v2.10.0 (see tests/contract).
+    # Verified against pkg-RESTAPI v2.10.2 (see tests/contract).
     dnsserver_list = None
     if dns_server:
         try:

@@ -6,7 +6,7 @@
 **Method**: Verified against the pfSense REST API v2 PHP source code (Endpoint.inc, ContentHandler, model files)
 
 > **Note (2026-08):** this document is a **v1.0.0 audit snapshot**. The
-> compatibility target is now pkg-RESTAPI **v2.10.0** (see README). A
+> compatibility target is now pkg-RESTAPI **v2.10.2** (see README). A
 > subsequent contract-driven audit (`RELEASE_AUDIT.md`) found and fixed a
 > number of wire-format issues this document predates — the corrected field
 > names/types are tracked in `CHANGELOG.md` and enforced by the vendored

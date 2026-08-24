@@ -6,11 +6,14 @@ from typing import Any, Dict, Optional, Tuple
 
 
 class PfSenseVersion(str, Enum):
-    # Current stable releases (pkg-RESTAPI >= 2.8.x ships builds for these)
+    # Current stable releases (pkg-RESTAPI >= 2.8.x ships builds for these;
+    # CE 2.9.0 and Plus 26.07 need pkg-RESTAPI >= 2.10.1)
     CE_2_8_1 = "2.8.1"
+    CE_2_9_0 = "2.9.0"
     PLUS_25_11_1 = "25.11.1"
     PLUS_26_03 = "26.03"
     PLUS_26_03_1 = "26.03.1"
+    PLUS_26_07 = "26.07"
     # Older releases, still accepted; the last pkg-RESTAPI release with
     # builds for them is v2.7.3
     CE_2_8_0 = "2.8.0"

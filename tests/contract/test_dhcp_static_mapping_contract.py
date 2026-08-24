@@ -1,6 +1,6 @@
 """Contract tests for per-host DHCP lease times on static mappings.
 
-``defaultleasetime`` and ``maxleasetime`` are declared on the v2.10.0
+``defaultleasetime`` and ``maxleasetime`` are declared on the v2.10.2
 DHCPServerStaticMapping model for both POST and PATCH, typed integer. The
 framework silently drops unknown request keys, so a misspelled field name here
 would look like success while the reservation kept the package defaults. These

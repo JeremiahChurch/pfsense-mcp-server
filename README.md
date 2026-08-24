@@ -10,7 +10,7 @@
 
 [![CI](https://github.com/gensecaihq/pfsense-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/gensecaihq/pfsense-mcp-server/actions/workflows/ci.yml)
 [![MCP 2025-11-25](https://img.shields.io/badge/MCP-2025--11--25-6E56CF.svg)](https://modelcontextprotocol.io)
-[![pfSense API v2.10.0](https://img.shields.io/badge/pfSense%20API-v2.10.0-orange.svg)](https://pfrest.org/)
+[![pfSense API v2.10.2](https://img.shields.io/badge/pfSense%20API-v2.10.2-orange.svg)](https://pfrest.org/)
 [![Python 3.11–3.13](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-3776AB.svg)](https://www.python.org/)
 [![Tests](https://img.shields.io/badge/tests-572%20passing-brightgreen.svg)](#testing)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -62,7 +62,7 @@ Managing a pfSense firewall means clicking through web UI tabs, remembering fiel
 - Config backup before every delete/reboot — with a one-line rollback command (and an explicit warning if a backup point can't be captured)
 - Rate limiting on every mutating tool prevents runaway AI loops from flooding your firewall
 - Positive input validation (IP/port/MAC/CIDR) plus path-traversal/XSS screening, and secrets redacted from logs *and* API error responses
-- Wire-format verified against the pfSense REST API v2.10.0 schema by a contract-test layer, so tools send exactly what the API expects
+- Wire-format verified against the pfSense REST API v2.10.2 schema by a contract-test layer, so tools send exactly what the API expects
 
 ## Quick Start
 
@@ -210,15 +210,17 @@ See [SECURITY.md](SECURITY.md) for the vulnerability-disclosure policy and deplo
 
 | Version | REST API package | Status |
 |---|---|---|
-| pfSense CE 2.8.1 | [v2.10.0](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.10.0) (latest) | Verified |
-| pfSense Plus 26.03.1 | [v2.10.0](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.10.0) (latest) | Supported |
-| pfSense Plus 26.03 | [v2.10.0](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.10.0) (latest) | Verified |
-| pfSense Plus 25.11.1 | [v2.10.0](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.10.0) (latest) | Supported |
+| pfSense CE 2.9.0 | [v2.10.2](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.10.2) (latest) | Supported |
+| pfSense CE 2.8.1 | [v2.10.2](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.10.2) (latest) | Verified |
+| pfSense Plus 26.07 | [v2.10.2](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.10.2) (latest) | Supported |
+| pfSense Plus 26.03.1 | [v2.10.2](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.10.2) (latest) | Supported |
+| pfSense Plus 26.03 | [v2.10.2](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.10.2) (latest) | Verified |
+| pfSense Plus 25.11.1 | [v2.10.2](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.10.2) (latest) | Supported |
 | pfSense Plus 25.11 | [v2.7.3](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.7.3) (legacy) | Verified |
 | pfSense CE 2.8.0 | [v2.7.3](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.7.3) (legacy) | Supported |
 | pfSense Plus 24.11 | [v2.7.3](https://github.com/pfrest/pfSense-pkg-RESTAPI/releases/tag/v2.7.3) (legacy) | Supported |
 
-Requires the [pfSense REST API v2 package](https://github.com/pfrest/pfSense-pkg-RESTAPI) by [jaredhendrickson13](https://github.com/jaredhendrickson13). Package v2.8.x+ ships builds only for CE 2.8.1 and Plus 25.11.1/26.03/26.03.1; v2.7.3 is the last release with builds for CE 2.8.0 and Plus 24.11/25.11.
+Requires the [pfSense REST API v2 package](https://github.com/pfrest/pfSense-pkg-RESTAPI) by [jaredhendrickson13](https://github.com/jaredhendrickson13). Package v2.8.x+ ships builds only for CE 2.8.1 and Plus 25.11.1/26.03/26.03.1; CE 2.9.0 and Plus 26.07 need v2.10.1+; v2.7.3 is the last release with builds for CE 2.8.0 and Plus 24.11/25.11.
 
 > **Security note:** run REST API package **v2.10.0+**. It fixes a command-injection
 > flaw in the interface-group endpoints
@@ -280,7 +282,7 @@ environments that already run one.
 | `PFSENSE_API_KEY` | * | — | REST API key |
 | `PFSENSE_USERNAME` | * | — | pfSense username (for basic/jwt) |
 | `PFSENSE_PASSWORD` | * | — | pfSense password (for basic/jwt) |
-| `PFSENSE_VERSION` | | `CE_2_8_1` | Current: `CE_2_8_1`, `PLUS_25_11_1`, `PLUS_26_03`, `PLUS_26_03_1`. Legacy (still accepted): `CE_2_8_0`, `PLUS_24_11`, `PLUS_25_11`, `CE_26_03` |
+| `PFSENSE_VERSION` | | `CE_2_8_1` | Current: `CE_2_8_1`, `CE_2_9_0`, `PLUS_25_11_1`, `PLUS_26_03`, `PLUS_26_03_1`, `PLUS_26_07`. Legacy (still accepted): `CE_2_8_0`, `PLUS_24_11`, `PLUS_25_11`, `CE_26_03` |
 | `VERIFY_SSL` | | `true` | `false` disables certificate checking entirely — prefer `PFSENSE_CA_FILE` |
 | `PFSENSE_CA_FILE` | | — | PEM file for pfSense's private/self-signed CA, so verification stays on |
 | `API_TIMEOUT` | | `30` | Request timeout in seconds |
@@ -314,7 +316,7 @@ python3 -m pytest tests/ -v          # 572 tests
 python3 -m pytest tests/ --cov=src   # with coverage (~48%)
 ```
 
-The suite includes a **wire-contract layer** (`tests/contract/`) that asserts every tool's payload against the real pfSense REST API v2.10.0 schema (distilled from the upstream OpenAPI spec), so a wrong field name or type is a failing test rather than a silent misconfiguration. CI runs on Python 3.11/3.12/3.13 with `pip-audit` dependency scanning.
+The suite includes a **wire-contract layer** (`tests/contract/`) that asserts every tool's payload against the real pfSense REST API v2.10.2 schema (distilled from the upstream OpenAPI spec), so a wrong field name or type is a failing test rather than a silent misconfiguration. CI runs on Python 3.11/3.12/3.13 with `pip-audit` dependency scanning.
 
 On top of the in-process suite, an **end-to-end protocol smoke test** drives the
 server over the real MCP wire protocol with the official
