@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import random
+import re
 import ssl
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Union
@@ -1085,6 +1086,36 @@ class EnhancedPfSenseAPIClient:
 
     # DHCP Static Mapping Methods
 
+    @staticmethod
+    def _matches_filter(record: Dict, f: QueryFilter) -> bool:
+        """Apply one QueryFilter to a record, mirroring pfSense query operators."""
+        actual = record.get(f.field)
+        if actual is None:
+            return False
+        a = str(actual).lower()
+        v = str(f.value).lower()
+        op = f.operator
+        if op == "exact":
+            return a == v
+        if op == "contains":
+            return v in a
+        if op == "startswith":
+            return a.startswith(v)
+        if op == "endswith":
+            return a.endswith(v)
+        if op == "regex":
+            return re.search(str(f.value), str(actual)) is not None
+        if op in ("lt", "lte", "gt", "gte"):
+            try:
+                an, vn = float(actual), float(f.value)
+            except (TypeError, ValueError):
+                an, vn = a, v
+            return {
+                "lt": an < vn, "lte": an <= vn,
+                "gt": an > vn, "gte": an >= vn,
+            }[op]
+        return False
+
     async def get_dhcp_static_mappings(
         self,
         interface: Optional[str] = None,
@@ -1092,20 +1123,67 @@ class EnhancedPfSenseAPIClient:
         sort: Optional[SortOptions] = None,
         pagination: Optional[PaginationOptions] = None
     ) -> Dict:
-        """Get DHCP static mappings with filtering
+        """Get DHCP static mappings with filtering.
+
+        pfSense REST API v2 exposes NO plural /services/dhcp_server/static_mappings
+        collection — only the singular /services/dhcp_server/static_mapping, which
+        requires a specific (parent_id, id) pair. Static mappings are therefore read
+        from /services/dhcp_servers, where each server embeds its own `staticmap`
+        array, and filtering/sorting/pagination are applied client-side.
 
         Args:
             interface: Parent DHCP server interface (e.g. "lan", "opt1").
-                       Passed as parent_id query param, not a filter.
+                       Restricts results to that server. None returns all servers'.
+
+        Returns:
+            {"data": [...]} — each entry already carries `parent_id` and `id`,
+            matching the shape callers previously expected.
         """
-        if pagination is None:
-            pagination = PaginationOptions(limit=200)
-        extra = {"parent_id": interface} if interface else None
-        return await self._make_request(
-            "GET", "/services/dhcp_server/static_mappings",
-            filters=filters, sort=sort, pagination=pagination,
-            extra_params=extra
+        servers = await self._make_request(
+            "GET", "/services/dhcp_servers",
+            pagination=PaginationOptions(limit=200)
         )
+
+        server_list = servers.get("data") or []
+        known_interfaces = [s.get("id") for s in server_list]
+
+        if interface is not None and interface not in known_interfaces:
+            raise ValueError(
+                f"No DHCP server configured on interface '{interface}'. "
+                f"Available: {', '.join(str(i) for i in known_interfaces)}"
+            )
+
+        mappings: List[Dict] = []
+        for server in server_list:
+            if interface is not None and server.get("id") != interface:
+                continue
+            for entry in (server.get("staticmap") or []):
+                record = dict(entry)
+                record.setdefault("parent_id", server.get("id"))
+                mappings.append(record)
+
+        for f in (filters or []):
+            mappings = [m for m in mappings if self._matches_filter(m, f)]
+
+        if sort and sort.sort_by:
+            mappings.sort(
+                key=lambda m: (m.get(sort.sort_by) is None,
+                               str(m.get(sort.sort_by, "")).lower()),
+                reverse=(sort.sort_order == "SORT_DESC"),
+            )
+
+        total = len(mappings)
+        if pagination is not None:
+            offset = pagination.offset or 0
+            limit = pagination.limit
+            mappings = mappings[offset:offset + limit] if limit else mappings[offset:]
+
+        return {
+            "code": servers.get("code", 200),
+            "status": servers.get("status", "ok"),
+            "total": total,
+            "data": mappings,
+        }
 
     async def create_dhcp_static_mapping(
         self,
