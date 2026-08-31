@@ -225,6 +225,33 @@ class TestMakeRequestContentType:
             headers = self.client.client.request.call_args.kwargs["headers"]
             assert "Content-Type" not in headers
 
+    async def test_delete_body_survives_real_httpx_signature(self):
+        """Regression: httpx AsyncClient.delete() accepts no `json` kwarg.
+
+        The mocks elsewhere are signature-free MagicMocks, so they happily
+        swallowed `json=` and hid a TypeError that broke every delete tool
+        against a real server. Bind against the genuine httpx signature here.
+        """
+        resp = self._mock_response()
+        with patch.object(self.client, "_ensure_client"):
+            self.client.client = MagicMock(spec=httpx.AsyncClient)
+            self.client.client.request = AsyncMock(return_value=resp)
+            await self.client._make_request(
+                "DELETE", "/firewall/rule", data={"id": 0, "parent_id": "lan"}
+            )
+            args, kwargs = self.client.client.request.call_args
+            assert args[0] == "DELETE"
+            assert kwargs["json"]["id"] == 0
+            assert kwargs["json"]["parent_id"] == "lan"
+
+        # And prove the old call shape is genuinely invalid on real httpx.
+        real = httpx.AsyncClient()
+        try:
+            with pytest.raises(TypeError):
+                await real.delete("https://192.0.2.1/x", json={"id": 0})
+        finally:
+            await real.aclose()
+
 
 # ---------------------------------------------------------------------------
 # _make_request error handling
@@ -415,14 +442,78 @@ class TestServiceControlClient:
 # ---------------------------------------------------------------------------
 
 class TestDhcpStaticMappingCrud:
-    async def test_get_with_interface(self, mock_client, mock_make_request):
-        """Interface passed as parent_id extra_param, not a filter."""
-        mock_make_request.return_value = {"data": []}
+    # pfSense API v2 has no plural static_mappings collection — mappings are
+    # read from /services/dhcp_servers, which embeds a `staticmap` per server.
+    SERVERS = {
+        "data": [
+            {"id": "lan", "staticmap": [
+                {"parent_id": "lan", "id": 0, "mac": "aa:bb:cc:dd:ee:01",
+                 "ipaddr": "192.168.1.10", "hostname": "alpha"},
+                {"parent_id": "lan", "id": 1, "mac": "aa:bb:cc:dd:ee:02",
+                 "ipaddr": "192.168.1.11", "hostname": "beta"},
+            ]},
+            {"id": "opt1", "staticmap": [
+                {"parent_id": "opt1", "id": 0, "mac": "aa:bb:cc:dd:ee:03",
+                 "ipaddr": "10.0.0.10", "hostname": "gamma"},
+            ]},
+            {"id": "opt2", "staticmap": []},
+        ]
+    }
+
+    async def test_get_uses_dhcp_servers_endpoint(self, mock_client, mock_make_request):
+        """The plural static_mappings endpoint does not exist; use dhcp_servers."""
+        mock_make_request.return_value = self.SERVERS
         await mock_client.get_dhcp_static_mappings(interface="lan")
-        call_kwargs = mock_make_request.call_args
-        assert call_kwargs[0][1] == "/services/dhcp_server/static_mappings"
-        extra = call_kwargs.kwargs.get("extra_params") or call_kwargs[1].get("extra_params")
-        assert extra == {"parent_id": "lan"}
+        assert mock_make_request.call_args[0][1] == "/services/dhcp_servers"
+
+    async def test_get_with_interface_scopes_results(self, mock_client, mock_make_request):
+        mock_make_request.return_value = self.SERVERS
+        result = await mock_client.get_dhcp_static_mappings(interface="lan")
+        assert [m["hostname"] for m in result["data"]] == ["alpha", "beta"]
+        assert all(m["parent_id"] == "lan" for m in result["data"])
+
+    async def test_get_without_interface_returns_all(self, mock_client, mock_make_request):
+        mock_make_request.return_value = self.SERVERS
+        result = await mock_client.get_dhcp_static_mappings()
+        assert result["total"] == 3
+
+    async def test_get_unknown_interface_raises(self, mock_client, mock_make_request):
+        """An unanswerable query must fail loudly, not look like zero matches."""
+        mock_make_request.return_value = self.SERVERS
+        with pytest.raises(ValueError, match="No DHCP server configured"):
+            await mock_client.get_dhcp_static_mappings(interface="opt9")
+
+    async def test_get_enabled_interface_with_no_mappings_is_empty(
+        self, mock_client, mock_make_request
+    ):
+        """Distinct from an unknown interface: configured, just no reservations."""
+        mock_make_request.return_value = self.SERVERS
+        result = await mock_client.get_dhcp_static_mappings(interface="opt2")
+        assert result["data"] == [] and result["total"] == 0
+
+    async def test_get_applies_filters_client_side(self, mock_client, mock_make_request):
+        mock_make_request.return_value = self.SERVERS
+        result = await mock_client.get_dhcp_static_mappings(
+            filters=[QueryFilter("mac", "aa:bb:cc:dd:ee:03")]
+        )
+        assert len(result["data"]) == 1
+        assert result["data"][0]["parent_id"] == "opt1"
+
+    async def test_get_contains_filter(self, mock_client, mock_make_request):
+        mock_make_request.return_value = self.SERVERS
+        result = await mock_client.get_dhcp_static_mappings(
+            filters=[QueryFilter("hostname", "et", "contains")]
+        )
+        assert [m["hostname"] for m in result["data"]] == ["beta"]
+
+    async def test_get_sort_and_paginate(self, mock_client, mock_make_request):
+        mock_make_request.return_value = self.SERVERS
+        result = await mock_client.get_dhcp_static_mappings(
+            sort=SortOptions(sort_by="hostname", sort_order="SORT_DESC"),
+            pagination=PaginationOptions(limit=2, offset=0),
+        )
+        assert [m["hostname"] for m in result["data"]] == ["gamma", "beta"]
+        assert result["total"] == 3
 
     async def test_create_with_parent_id(self, mock_client, mock_make_request):
         mock_make_request.return_value = {"data": {"id": 0}}
