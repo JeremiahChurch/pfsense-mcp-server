@@ -825,6 +825,60 @@ class TestDhcpStaticMappingCrud:
         )
         assert [m["hostname"] for m in result["data"]] == ["beta"]
 
+    async def test_get_sort_desc_keeps_missing_values_last(
+        self, mock_client, mock_make_request
+    ):
+        """Regression: a descending sort must not float missing values to the top.
+
+        A single composite (is_missing, value) sort key under reverse=True
+        inverts the missing-value discriminator as well, so records lacking the
+        sorted field lead a descending sort and push populated records onto
+        later pages.
+        """
+        mock_make_request.return_value = {
+            "data": [
+                {"id": "lan", "staticmap": [
+                    {"parent_id": "lan", "id": 0, "hostname": "alpha"},
+                    {"parent_id": "lan", "id": 1},  # hostname key absent
+                    {"parent_id": "lan", "id": 4, "hostname": ""},  # pfSense's real "unset"
+                    {"parent_id": "lan", "id": 2, "hostname": "gamma"},
+                    {"parent_id": "lan", "id": 3, "hostname": "beta"},
+                ]},
+            ]
+        }
+        desc = await mock_client.get_dhcp_static_mappings(
+            sort=SortOptions(sort_by="hostname", sort_order="SORT_DESC")
+        )
+        assert [m.get("hostname") for m in desc["data"]][:3] == ["gamma", "beta", "alpha"]
+        assert all(not m.get("hostname") for m in desc["data"][3:])
+
+        asc = await mock_client.get_dhcp_static_mappings(
+            sort=SortOptions(sort_by="hostname", sort_order="SORT_ASC")
+        )
+        # Empty-string hostnames are pfSense's "unset"; they must sort last too,
+        # or an ascending page 1 is nothing but blank records.
+        assert [m.get("hostname") for m in asc["data"]][:3] == ["alpha", "beta", "gamma"]
+        assert all(not m.get("hostname") for m in asc["data"][3:])
+
+    async def test_get_derives_parent_id_when_absent(
+        self, mock_client, mock_make_request
+    ):
+        """parent_id is derived from the server id when an entry omits it.
+
+        pfSense CE 2.8.0 does include parent_id on every staticmap entry, so
+        the main fixtures mirror that. This covers the setdefault fallback,
+        which those fixtures would otherwise leave untested — and which every
+        PATCH/DELETE depends on to target the right interface.
+        """
+        mock_make_request.return_value = {
+            "data": [
+                {"id": "lan", "staticmap": [{"id": 0, "mac": "aa:bb:cc:dd:ee:01"}]},
+                {"id": "opt1", "staticmap": [{"id": 0, "mac": "aa:bb:cc:dd:ee:02"}]},
+            ]
+        }
+        result = await mock_client.get_dhcp_static_mappings()
+        assert [m["parent_id"] for m in result["data"]] == ["lan", "opt1"]
+
     async def test_get_sort_and_paginate(self, mock_client, mock_make_request):
         mock_make_request.return_value = self.SERVERS
         result = await mock_client.get_dhcp_static_mappings(

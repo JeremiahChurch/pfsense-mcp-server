@@ -1166,11 +1166,26 @@ class EnhancedPfSenseAPIClient:
             mappings = [m for m in mappings if self._matches_filter(m, f)]
 
         if sort and sort.sort_by:
+            # Two stable passes, not one composite key: a composite
+            # (is_missing, value) tuple under reverse=True would invert the
+            # missing-value discriminator too, floating records that lack the
+            # field to the top of a descending sort and pushing populated ones
+            # onto later pages. Sort by value first, then re-sort on presence
+            # alone so records missing the field stay last in both directions.
+            #
+            # "Missing" covers the empty string as well as None: pfSense returns
+            # "" for unset optional fields like hostname, not null. Testing only
+            # for None would leave the real-world case unhandled — an ascending
+            # hostname sort would fill its first page with blank records.
+            def _is_missing(m):
+                v = m.get(sort.sort_by)
+                return v is None or (isinstance(v, str) and not v.strip())
+
             mappings.sort(
-                key=lambda m: (m.get(sort.sort_by) is None,
-                               str(m.get(sort.sort_by, "")).lower()),
+                key=lambda m: str(m.get(sort.sort_by, "")).lower(),
                 reverse=(sort.sort_order == "SORT_DESC"),
             )
+            mappings.sort(key=_is_missing)
 
         total = len(mappings)
         if pagination is not None:
