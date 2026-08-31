@@ -191,11 +191,12 @@ async def search_dhcp_static_mappings(
         # Raised when the requested interface has no DHCP server configured.
         # Reported as a failure, not an empty result set — an unanswerable
         # query must never be indistinguishable from "zero matches".
+        # error_kind lets a caller tell a bad request from a broken server.
         logger.error(f"Failed to search DHCP static mappings: {e}")
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error_kind": "unknown_interface", "error": str(e)}
     except Exception as e:
         logger.error(f"Failed to search DHCP static mappings: {e}")
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error_kind": "api_error", "error": str(e)}
 
 
 @mcp.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False))

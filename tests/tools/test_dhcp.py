@@ -144,6 +144,19 @@ class TestSearchDhcpStaticMappings:
         assert result["success"] is True
         assert result["count"] == 0
 
+    async def test_error_kind_distinguishes_bad_request_from_api_failure(
+        self, mock_client, mock_make_request, dhcp_static_mappings_response
+    ):
+        """Both paths fail, but a caller must be able to tell them apart."""
+        mock_make_request.return_value = dhcp_static_mappings_response
+        bad_request = await _search_dhcp_static_mappings(interface="opt9")
+        assert bad_request["error_kind"] == "unknown_interface"
+
+        mock_make_request.side_effect = Exception("Status: 500")
+        mock_make_request.return_value = None
+        api_failure = await _search_dhcp_static_mappings(interface="lan")
+        assert api_failure["error_kind"] == "api_error"
+
     async def test_unknown_interface_reports_failure(
         self, mock_client, mock_make_request, dhcp_static_mappings_response
     ):
