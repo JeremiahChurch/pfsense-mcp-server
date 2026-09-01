@@ -18,10 +18,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy requirements first for better caching
 COPY requirements.txt /tmp/requirements.txt
+COPY requirements.lock.txt /tmp/requirements.lock.txt
 
-# Install Python dependencies
+# Install Python dependencies from the fully-pinned lock so builds are
+# reproducible. requirements.txt alone pinned only direct deps, letting
+# transitive versions drift between rebuilds until the image no longer
+# started. Verify the lock still satisfies requirements.txt, then install it.
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r /tmp/requirements.txt
+    pip install --no-cache-dir -r /tmp/requirements.lock.txt && \
+    pip check
 
 # Production stage
 FROM python:3.11-slim
